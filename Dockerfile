@@ -5,9 +5,12 @@ RUN apt-get install build-essential -y
 Run mkdir -p /opt/logs
 Run mkdir -p /opt/code
 
+# Separate from Other Honeypots
+#Run apt-get libev -y
+
 COPY MoveToContainer /opt/code/
 
-RUN make /opt/code/Makefile
+RUN Makefile /opt/code/Makefile
 
 Expose 3306
 
