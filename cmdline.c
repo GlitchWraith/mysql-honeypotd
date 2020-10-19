@@ -22,7 +22,9 @@ static struct option long_options[] = {
     { "user",       required_argument, NULL, 'u' },
     { "group",      required_argument, NULL, 'g' },
     { "chroot",     required_argument, NULL, 'c' },
+    { "delay",      required_argument, NULL, 'd' },
     { "foreground", no_argument,       NULL, 'f' },
+    { "no-syslog",  no_argument,       NULL, 'x' },
     { "setver",     required_argument, NULL, 's' },
     { "help",       no_argument,       NULL, 'h' },
     { "version",    no_argument,       NULL, 'v' }
@@ -50,8 +52,11 @@ static void usage()
         "  -c, --chroot DIR      chroot() into the specified DIR\n"
         "  -s, --setver VERSION  report this MySQL server version\n"
         "                        (default: 5.7.19)\n"
+        "  -d, --delay DELAY     Add DELAY seconds after each login attempt\n"
         "  -f, --foreground      do not daemonize\n"
         "                        (forced if no PID file specified)\n"
+        "  -x, --no-syslog       log messages only to stderr\n"
+        "                        (only works with --foreground)\n"
         "  -h, --help            display this help and exit\n"
         "  -v, --version         output version information and exit\n\n"
         "NOTES:\n"
@@ -73,8 +78,8 @@ __attribute__((noreturn))
 static void version()
 {
     printf(
-        "mysql-honeypotd 0.4.1\n"
-        "Copyright (c) 2017, 2019 Volodymyr Kolesnykov <volodymyr@wildwolf.name>\n"
+        "mysql-honeypotd 0.5.0\n"
+        "Copyright (c) 2017, 2020 Volodymyr Kolesnykov <volodymyr@wildwolf.name>\n"
         "License: MIT <http://opensource.org/licenses/MIT>\n"
     );
 
@@ -130,6 +135,7 @@ static void set_defaults(struct globals_t* g)
     if (!g->bind_port) {
         g->bind_port = my_strdup("3306");
     }
+
 }
 
 static void resolve_pid_file(struct globals_t* g)
@@ -198,7 +204,7 @@ void parse_options(int argc, char** argv, struct globals_t* g)
 {
     while (1) {
         int option_index = 0;
-        int c = getopt_long(argc, argv, "b:p:P:n:u:g:c:s:fhv", long_options, &option_index);
+        int c = getopt_long(argc, argv, "b:p:P:n:u:g:c:s:d:fxhv", long_options, &option_index);
         if (-1 == c) {
             break;
         }
@@ -231,8 +237,20 @@ void parse_options(int argc, char** argv, struct globals_t* g)
                 g->daemon_name = my_strdup(optarg);
                 break;
 
+            case 'd':
+                g->delay = atoi(optarg);
+                if (g->delay < 0) {
+                    g->delay = 0;
+                }
+
+                break;
+
             case 'f':
                 g->foreground = 1;
+                break;
+
+            case 'x':
+                g->no_syslog = 1;
                 break;
 
             case 'u': {
@@ -301,5 +319,9 @@ void parse_options(int argc, char** argv, struct globals_t* g)
 
     if (!g->pid_file) {
         g->foreground = 1;
+    }
+
+    if (!g->foreground) {
+        g->no_syslog = 0;
     }
 }

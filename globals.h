@@ -19,8 +19,10 @@ struct globals_t {
     int pid_fd;
     int piddir_fd;
     int foreground;
+    int no_syslog;
     int uid_set;
     int gid_set;
+    int delay;
     uid_t uid;
     gid_t gid;
     uint32_t thread_id;
